@@ -1,6 +1,7 @@
 package de.flexitrade.gateway.config;
 
-import lombok.RequiredArgsConstructor;
+import java.util.function.Function;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec;
@@ -9,9 +10,10 @@ import org.springframework.cloud.gateway.route.builder.UriSpec;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.function.Function;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
+//@EnableHystrix
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class GatewayConfig {
 

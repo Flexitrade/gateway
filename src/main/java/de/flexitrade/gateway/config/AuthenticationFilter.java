@@ -2,7 +2,6 @@ package de.flexitrade.gateway.config;
 
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -15,8 +14,9 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
-import de.flexitrade.gateway.exception.ErrorException;
+import de.flexitrade.common.exception.ErrorException;
 import de.flexitrade.gateway.util.JwtConstants;
+import de.flexitrade.gateway.util.JwtUtils;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
 public class AuthenticationFilter implements GatewayFilter {
 
     private final RouterValidator routerValidator;
-    private final JwtUtil jwtUtil;
+    private final JwtUtils jwtUtil;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -64,7 +64,7 @@ public class AuthenticationFilter implements GatewayFilter {
 
         final String bearerToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        if (StringUtils.isNotEmpty(bearerToken)) {
+        if (!bearerToken.isBlank()) {
             final String[] parts = bearerToken.split(" ");
             token = parts[parts.length - 1].trim();
         }

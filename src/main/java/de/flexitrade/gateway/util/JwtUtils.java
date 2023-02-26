@@ -1,16 +1,16 @@
-package de.flexitrade.gateway.config;
+package de.flexitrade.gateway.util;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import de.flexitrade.gateway.exception.ErrorException;
-import de.flexitrade.gateway.util.JwtConstants;
+import de.flexitrade.common.exception.ErrorException;
+import de.flexitrade.common.persistence.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -24,44 +24,51 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class JwtUtil {
+public class JwtUtils {
 
-    public enum TypeToken {
+    public enum TokenType {
         ACCESS, REFRESH;
     }
 
-    @Value("${jwt.expirationAccess}")
-    private String expirationAccess;
+    @Value("${server.security.authentication.jwt.token-validity-in-seconds}")
+    private Long expirationAccess;
 
-    @Value("${jwt.expirationRefresh}")
-    private String expirationRefresh;
+    @Value("${server.security.authentication.jwt.token-validity-in-seconds-for-refresh-token}")
+    private Long expirationRefresh;
 
-    private Key key;
+    private Key secretKey;
 
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(Keys.secretKeyFor(SignatureAlgorithm.HS256).getEncoded());
+        this.secretKey = Keys.hmacShaKeyFor(Keys.secretKeyFor(SignatureAlgorithm.HS256).getEncoded());
     }
 
+    @Autowired
+	public JwtUtils(@Value("${server.security.authentication.jwt.token-validity-in-seconds}") Long expirationAccess,
+			@Value("${server.security.authentication.jwt.token-validity-in-seconds-for-refresh-token}") Long expirationRefresh) {
+		this.expirationAccess = expirationAccess;
+		this.expirationRefresh = expirationRefresh;
+	}
+
     public void isValidAccessToken(String token) throws ErrorException {
-        isValidToken(token, TypeToken.ACCESS);
+        isValidToken(token, TokenType.ACCESS);
     }
 
     public void isValidRefreshToken(String token) throws ErrorException {
-        isValidToken(token, TypeToken.REFRESH);
+        isValidToken(token, TokenType.REFRESH);
     }
 
-    private void isValidToken(String token, TypeToken typeToken) throws ErrorException {
+    private void isValidToken(String token, TokenType typeToken) throws ErrorException {
         final Claims claims = getAllClaimsFromToken(token);
-        final String type = claims.get(JwtConstants.JWT_TYPE_TOKEN, String.class);
-        if (StringUtils.isBlank(type) || !typeToken.name().equals(type)) {
-            throw new ErrorException(log, "JWT Token is of type " + (TypeToken.ACCESS.equals(typeToken) ? TypeToken.REFRESH.name() : TypeToken.ACCESS.name()));
+        final String type = claims.get(JwtConstants.JWT_TOKEN_TYPE, String.class);
+        if (type.isBlank() || !typeToken.name().equals(type)) {
+            throw new ErrorException(log, "JWT Token is of type " + (TokenType.ACCESS.equals(typeToken) ? TokenType.REFRESH.name() : TokenType.ACCESS.name()));
         }
     }
 
     public Claims getAllClaimsFromToken(String token) throws ErrorException {
         try {
-            return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+            return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody();
         } catch (SignatureException e) {
             throw new ErrorException(log, "Invalid JWT signature", e);
         } catch (MalformedJwtException e) {
@@ -77,17 +84,17 @@ public class JwtUtil {
         }
     }
 
-    public String generate(UserDTO userDTO, TypeToken typeToken) {
+    public String generate(User user, TokenType typeToken) {
         final Map<String, Object> claims = new HashMap<>();
-        claims.put(JwtConstants.JWT_USER_ID, userDTO.getId());
-        claims.put(JwtConstants.JWT_USERNAME, userDTO.getUsername());
-        claims.put(JwtConstants.JWT_PROFILE_ID, userDTO.getPerfil().getId());
-        claims.put(JwtConstants.JWT_TYPE_TOKEN, typeToken);
-        return doGenerateToken(claims, userDTO.getUsername(), typeToken);
+        claims.put(JwtConstants.JWT_USER_ID, user.getId());
+        claims.put(JwtConstants.JWT_USERNAME, user.getUsername());
+        claims.put(JwtConstants.JWT_PROFILE_ID, "-1");
+        claims.put(JwtConstants.JWT_TOKEN_TYPE, typeToken);
+        return doGenerateToken(claims, user.getUsername(), typeToken);
     }
 
-    private String doGenerateToken(Map<String, Object> claims, String username, TypeToken typeToken) {
-        final long expirationSeconds = Long.parseLong(TypeToken.ACCESS.equals(typeToken) ? expirationAccess : expirationRefresh);
+    private String doGenerateToken(Map<String, Object> claims, String username, TokenType typeToken) {
+        final long expirationSeconds = TokenType.ACCESS.equals(typeToken) ? expirationAccess : expirationRefresh;
         final long expirationTimeLong = expirationSeconds * 1000;
 
         final Date createdDate = new Date();
@@ -98,7 +105,7 @@ public class JwtUtil {
                 .setSubject(username)
                 .setIssuedAt(createdDate)
                 .setExpiration(expirationDate)
-                .signWith(key)
+                .signWith(secretKey)
                 .compact();
     }
 

@@ -7,5 +7,5 @@ public class JwtConstants {
     public static final String JWT_USER_ID = "jwt_user_id";
     public static final String JWT_USERNAME = "jwt_username";
     public static final String JWT_PROFILE_ID = "jwt_profile_id";
-    public static final String JWT_TYPE_TOKEN = "jwt_type_token";
+    public static final String JWT_TOKEN_TYPE = "jwt_token_type";
 }
