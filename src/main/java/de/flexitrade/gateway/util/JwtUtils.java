@@ -9,23 +9,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import de.flexitrade.common.exception.ErrorException;
-import de.flexitrade.common.persistence.entity.User;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Component
 public class JwtUtils {
 
+    public static final String JWT_USER_ID = "jwt_user_id";
+    public static final String JWT_USERNAME = "jwt_username";
+    public static final String JWT_PROFILE_ID = "jwt_profile_id";
+    public static final String JWT_TOKEN_TYPE = "jwt_token_type";
+	
     public enum TokenType {
         ACCESS, REFRESH;
     }
@@ -50,47 +47,32 @@ public class JwtUtils {
 		this.expirationRefresh = expirationRefresh;
 	}
 
-    public void isValidAccessToken(String token) throws ErrorException {
+    public void isValidAccessToken(String token) throws Exception {
         isValidToken(token, TokenType.ACCESS);
     }
 
-    public void isValidRefreshToken(String token) throws ErrorException {
+    public void isValidRefreshToken(String token) throws Exception {
         isValidToken(token, TokenType.REFRESH);
     }
 
-    private void isValidToken(String token, TokenType typeToken) throws ErrorException {
+    private void isValidToken(String token, TokenType typeToken) throws Exception {
         final Claims claims = getAllClaimsFromToken(token);
-        final String type = claims.get(JwtConstants.JWT_TOKEN_TYPE, String.class);
+        final String type = claims.get(JWT_TOKEN_TYPE, String.class);
         if (type.isBlank() || !typeToken.name().equals(type)) {
-            throw new ErrorException(log, "JWT Token is of type " + (TokenType.ACCESS.equals(typeToken) ? TokenType.REFRESH.name() : TokenType.ACCESS.name()));
+            throw new Exception("JWT Token is of type " + (TokenType.ACCESS.equals(typeToken) ? TokenType.REFRESH.name() : TokenType.ACCESS.name()));
         }
     }
 
-    public Claims getAllClaimsFromToken(String token) throws ErrorException {
-        try {
-            return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody();
-        } catch (SignatureException e) {
-            throw new ErrorException(log, "Invalid JWT signature", e);
-        } catch (MalformedJwtException e) {
-            throw new ErrorException(log, "Invalid JWT token", e);
-        } catch (ExpiredJwtException e) {
-            throw new ErrorException(log, "JWT token is expired", e);
-        } catch (UnsupportedJwtException e) {
-            throw new ErrorException(log, "JWT token is unsupported", e);
-        } catch (IllegalArgumentException e) {
-            throw new ErrorException(log, "JWT claims string is empty", e);
-        } catch (Exception e) {
-            throw new ErrorException(log, "JWT error", e);
-        }
+    public Claims getAllClaimsFromToken(String token) throws Exception {
+        return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody();
     }
 
-    public String generate(User user, TokenType typeToken) {
+    public String generate(String username, String user_id, String profile_id, TokenType typeToken) {
         final Map<String, Object> claims = new HashMap<>();
-        claims.put(JwtConstants.JWT_USER_ID, user.getId());
-        claims.put(JwtConstants.JWT_USERNAME, user.getUsername());
-        claims.put(JwtConstants.JWT_PROFILE_ID, "-1");
-        claims.put(JwtConstants.JWT_TOKEN_TYPE, typeToken);
-        return doGenerateToken(claims, user.getUsername(), typeToken);
+        claims.put(JWT_USERNAME, username);
+        claims.put(JWT_USER_ID, user_id);
+        claims.put(JWT_PROFILE_ID, profile_id);
+        return doGenerateToken(claims, username, typeToken);
     }
 
     private String doGenerateToken(Map<String, Object> claims, String username, TokenType typeToken) {

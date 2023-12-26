@@ -14,8 +14,6 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
-import de.flexitrade.common.exception.ErrorException;
-import de.flexitrade.gateway.util.JwtConstants;
 import de.flexitrade.gateway.util.JwtUtils;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +23,7 @@ import reactor.core.publisher.Mono;
 @RefreshScope
 @Component
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class AuthenticationFilter implements GatewayFilter {
+public class MainGatewayFilter implements GatewayFilter {
 
     private final RouterValidator routerValidator;
     private final JwtUtils jwtUtil;
@@ -43,7 +41,7 @@ public class AuthenticationFilter implements GatewayFilter {
                 final String token = this.extractToken(request);
                 jwtUtil.isValidAccessToken(token);
                 this.populateRequestWithHeaders(exchange, token);
-            } catch (ErrorException e) {
+            } catch (Exception e) {
                 return this.onError(exchange, e.getMessage());
             }
         }
@@ -72,12 +70,13 @@ public class AuthenticationFilter implements GatewayFilter {
         return token;
     }
 
-    private void populateRequestWithHeaders(ServerWebExchange exchange, String token) throws ErrorException {
+    private void populateRequestWithHeaders(ServerWebExchange exchange, String token) throws Exception {
         final Claims claims = jwtUtil.getAllClaimsFromToken(token);
 
         exchange.getRequest().mutate()
-                .header(JwtConstants.JWT_USER_ID, String.valueOf(claims.get(JwtConstants.JWT_USER_ID)))
-                .header(JwtConstants.JWT_USERNAME, String.valueOf(claims.get(JwtConstants.JWT_USERNAME)))
+                .header(JwtUtils.JWT_USERNAME, String.valueOf(claims.get(JwtUtils.JWT_USERNAME)))
+                .header(JwtUtils.JWT_USER_ID, String.valueOf(claims.get(JwtUtils.JWT_USER_ID)))
+                .header(JwtUtils.JWT_PROFILE_ID, String.valueOf(claims.get(JwtUtils.JWT_PROFILE_ID)))
                 .build();
     }
 

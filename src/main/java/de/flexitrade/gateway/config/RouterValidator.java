@@ -11,8 +11,7 @@ import org.springframework.util.AntPathMatcher;
 public class RouterValidator {
 
     public static final List<String> openPatternsApiEndpoints =
-            List.of("**/auth/token",
-            		"**/usermanagement/register",
+            List.of("/auth/**",
                     "/**/swagger-ui/**",
                     "/**/swagger-resources/**",
                     "/**/v2/api-docs/**");
