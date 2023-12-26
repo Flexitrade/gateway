@@ -17,20 +17,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class GatewayConfig {
 
-    private final AuthenticationFilter authenticationFilter;
+    private final MainGatewayFilter gatewayFilter;
 
     @Bean
     public RouteLocator routes(RouteLocatorBuilder builder) {
-        final Function<GatewayFilterSpec, UriSpec> filter = f -> f.filter(authenticationFilter).retry(1);
+        final Function<GatewayFilterSpec, UriSpec> filter = f -> f.filter(gatewayFilter).retry(1);
 
         return builder.routes()
-                .route("apiUserModule", r -> r.path("/api-user/**")
+                .route("apiAuthenticationModule", r -> r.path("/auth/*")
                         .filters(filter)
-                        .uri("lb://api-user"))
+                        .uri("lb://authentication-service"))
 
-                .route("apiUserDataModule", r -> r.path("/api-user-data/**")
+                .route("apiUsermanagementModule", r -> r.path("/usermanagement/*")
                         .filters(filter)
-                        .uri("lb://api-user-data"))
+                        .uri("lb://usermanagement-service"))
 
                 .build();
     }

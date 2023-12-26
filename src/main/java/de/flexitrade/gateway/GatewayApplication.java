@@ -9,14 +9,11 @@ import org.springdoc.core.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.gateway.route.RouteDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,9 +21,6 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableJpaRepositories({"de.flexitrade.common.persistence.repository"})
-@EntityScan({"de.flexitrade.common.persistence.entity"})
-@ComponentScan("de.flexitrade")
 public class GatewayApplication {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GatewayApplication.class);
